@@ -16,7 +16,7 @@ lf = {
 
 af = {
     'linear': (lambda x: x, lambda x: 1),
-    'relu': (lambda x: np.max(0, x), lambda x: 0 if x < 0 else x),
+    'relu': (lambda x: np.max(0, x), lambda x: 0 if x < 0 else 1),
     'sigmoid': (sigmoid, d_sigmoid)
 }
 
@@ -50,12 +50,22 @@ class Optimizer():
         self.loss_functions = loss_functions
         self.n_iter = n_iter
     
-    def optimize(self, backprop_dict, loss_functions):
+    def optimize(self, backprop_dict, loss_functions, activation_functions):
         loss_function = LossFunction(loss_function)
         if self.optimizer == 'gradient_descent':
             for iter in range(self.n_iter):
+                i = len(self.layers)
+                a = backprop_dict[f'deriv_layer_{i}'][f'a_{i}']
+                z = backprop_dict[f'deriv_layer_{i}'][f'z_{i}']
+                delta = loss_function.apply_derivative(a_L, y) * activation_function.apply_derivative(z)
                 for i in range(len(self.layers)):
-                    pass
+                    W -= self.learning_rate * (delta @ a_prev)
+                    b -= self.learning_rate * delta
+                    a = backprop_dict[f'deriv_layer_{i}'][f'a_{i-1}']
+                    z = backprop_dict[f'deriv_layer_{i}'][f'z_{i-1}']
+                    delta = self.layers[i].W.T @ delta * activation_function.apply_derivative(z)
+                    self.layers[i].W = W
+                    self.layers[i].b = b
 
 
 class Layer():
@@ -77,16 +87,19 @@ class FFNeuralNetwork():
         pass
 
     def train(self, epochs, optimizer):
+        # Create a dictionnary to store each values needed for the backpropagation
         backprop_dict = {f'deriv_layer_{i}': {} for i in range(len(self.layers))}
         a_i = np.copy(self.inputs)
         for epoch in range(epochs):
             for i in range(len(self.layers)):
+                # Perform the forward propagation through each layer
+                # and stores each value computed
                 backprop_dict[f'deriv_layer_{i}'][f'a_{i - 1}'] = a_i
                 z = self.layers[i].W @ a_i + self.layers[i].b
                 a = self.layers[i].activation(z)
                 a_i = a
                 backprop_dict[f'deriv_layer_{i}'][f'z_{i}'] = a_i
                 backprop_dict[f'deriv_layer_{i}'][f'W_{i}'] = self.layers[i].W
-                backprop_dict[f'deriv_layer_{i}'][f'b_{i}'] = self.layers[i].b
+                #backprop_dict[f'deriv_layer_{i}'][f'b_{i}'] = self.layers[i].b
 
             optimizer.optimize(backprop_dict, functions)
