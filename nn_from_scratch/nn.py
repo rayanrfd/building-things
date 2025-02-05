@@ -41,7 +41,7 @@ class Optimizer():
     def optimize(self, backprop_list, layers, activation_functions, labels):
         if self.optimizer == 'gradient_descent':
             for iter in range(self.n_iter):
-                i = len(layers)
+                i = len(layers) - 1
                 a = backprop_list[i]['a']
                 z = backprop_list[i]['z']
                 a_prev = backprop_list[i]['a_prev']
@@ -58,10 +58,10 @@ class Optimizer():
 
 class Layer():
     def __init__(self, input_size, units, activation: ActivationFunction):
-        self.n_x = input_size.shape[0]
+        self.n_x = input_size
         self.units = units
         self.W = np.random.randn(self.units, self.n_x)
-        self.b = np.zeros(self.units, 1)
+        self.b = np.zeros((self.units, 1))
         self.activation = activation
     
 
